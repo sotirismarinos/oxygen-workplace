@@ -662,7 +662,7 @@
   });
 
   /* ---------- camera scanning ---------- */
-  let stream = null, scanTimer = null, detector = null;
+  let stream = null, scanTimer = null;
   const recentScans = {}; // code -> ts, debounce
 
   document.getElementById('btnStartCam').addEventListener('click', startCamera);
@@ -683,9 +683,6 @@
     document.getElementById('camFrame').style.display = 'block';
     document.getElementById('camControls').hidden = false;
 
-    if('BarcodeDetector' in window){
-      try{ detector = new BarcodeDetector({ formats: ['qr_code'] }); }catch(e){ detector = null; }
-    }
     scanTimer = setInterval(scanFrame, 350);
   }
   function stopCamera(){
@@ -700,20 +697,13 @@
     const video = document.getElementById('video');
     if(!video.videoWidth) return;
     let code = null;
-    if(detector){
-      try{
-        const results = await detector.detect(video);
-        if(results && results[0]) code = results[0].rawValue;
-      }catch(e){ /* fall through to canvas method next tick */ }
-    } else {
-      const canvas = document.getElementById('canvas');
-      canvas.width = video.videoWidth; canvas.height = video.videoHeight;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      const imgData = ctx.getImageData(0,0,canvas.width,canvas.height);
-      const result = window.jsQR ? jsQR(imgData.data, imgData.width, imgData.height) : null;
-      if(result) code = result.data;
-    }
+    const canvas = document.getElementById('canvas');
+    canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    const imgData = ctx.getImageData(0,0,canvas.width,canvas.height);
+    const result = window.jsQR ? jsQR(imgData.data, imgData.width, imgData.height) : null;
+    if(result) code = result.data;
     if(code) handleScannedCode(code.trim());
   }
   function handleScannedCode(code){
